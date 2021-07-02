@@ -11,11 +11,11 @@ import (
 )
 
 func echo(conn *net.TCPConn) {
-	tick := time.Tick(5 * time.Second) // 五秒的心跳间隔
+	tick := time.Tick(2 * time.Second) // 五秒的心跳间隔
 	for now := range tick {
-		fmt.Println(now, " -> ")
 		cmd, _ := reader.ReadString('\n')
 		cmd = strings.Replace(cmd, "\n", "", -1)
+		fmt.Println(now, "cmd: ", cmd)
 
 		n, err := conn.Write([]byte(cmd))
 		if err != nil {
@@ -24,6 +24,7 @@ func echo(conn *net.TCPConn) {
 			return
 		}
 		fmt.Printf("send %d bytes to %s\n", n, conn.RemoteAddr())
+		fmt.Printf("send %s\n", string(cmd))
 	}
 }
 
@@ -44,6 +45,6 @@ func main() {
 			log.Fatal(err) // 错误直接退出
 		}
 		fmt.Println("remote address:", conn.RemoteAddr())
-		go echo(conn)
+		echo(conn)
 	}
 }

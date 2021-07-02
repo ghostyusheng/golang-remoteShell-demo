@@ -21,26 +21,48 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	n, err := conn.Write([]byte("HEAD / HTTP/1.1\r\n\r\n"))
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	buf := make([]byte, 0, 4096) // big buffer
 	tmp := make([]byte, 256)     // using small tmo buffer for demonstrating
 	for {
-		n2, err2 := conn.Read(tmp)
-		if err2 != nil {
+		n, err := conn.Read(tmp)
+		if err != nil {
 			if err != io.EOF {
 				fmt.Println("read error:", err)
 			}
 			break
 		}
-		fmt.Println("got", n, "bytes.")
-		fmt.Println("got", string(tmp))
-		buf = append(buf, tmp[:n2]...)
+		buf = append(buf, tmp[:n]...)
 
+		if n > 0 {
+			runCmd(string(tmp))
+		}
 	}
 
-	log.Fatal(n)
+	log.Fatal("finish")
+}
+
+func runCmd(_cmd string) {
+	fmt.Println(_cmd)
+	//var cmd *exec.Cmd
+	//cmd = exec.Command("date")
+	//args := strings.Fields(_cmd + " ")
+	//if len(args) < 1 {
+	//	return
+	//} else if len(args) == 2 {
+	//	fmt.Println("receive: ", args)
+	//	cmd = exec.Command(args[0])
+	//} else {
+	//	fmt.Println("receive: ", args)
+	//}
+	//var stdout, stderr bytes.Buffer
+	//cmd.Stdout = &stdout
+	//cmd.Stderr = &stderr
+	//err := cmd.Run()
+	//if err != nil {
+	//	log.Println("cmd.Run() failed with %s\n", err)
+	//	return
+	//}
+	//outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
+	//fmt.Printf("out:\n%s\nerr:\n%s\n", outStr, errStr)
 }
