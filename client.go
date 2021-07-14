@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"os"
+	"os/exec"
+	"strings"
 )
 
 func main() {
@@ -22,8 +25,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	buf := make([]byte, 0, 4096) // big buffer
-	tmp := make([]byte, 256)     // using small tmo buffer for demonstrating
+	tmp := make([]byte, 256)
 	for {
 		n, err := conn.Read(tmp)
 		if err != nil {
@@ -32,37 +34,34 @@ func main() {
 			}
 			break
 		}
-		buf = append(buf, tmp[:n]...)
 
 		if n > 0 {
-			runCmd(string(tmp))
+			println("receive: ", string(tmp))
+			runCmd(string(tmp[:n]))
+			tmp = make([]byte, 256)
 		}
 	}
 
 	log.Fatal("finish")
 }
 
-func runCmd(_cmd string) {
-	fmt.Println(_cmd)
-	//var cmd *exec.Cmd
-	//cmd = exec.Command("date")
-	//args := strings.Fields(_cmd + " ")
-	//if len(args) < 1 {
-	//	return
-	//} else if len(args) == 2 {
-	//	fmt.Println("receive: ", args)
-	//	cmd = exec.Command(args[0])
-	//} else {
-	//	fmt.Println("receive: ", args)
-	//}
-	//var stdout, stderr bytes.Buffer
-	//cmd.Stdout = &stdout
-	//cmd.Stderr = &stderr
-	//err := cmd.Run()
-	//if err != nil {
-	//	log.Println("cmd.Run() failed with %s\n", err)
-	//	return
-	//}
-	//outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
-	//fmt.Printf("out:\n%s\nerr:\n%s\n", outStr, errStr)
+func runCmd(_cmd_str string) {
+	_cmd_slice := strings.Split(_cmd_str, " ")
+	var cmd *exec.Cmd
+	if len(_cmd_slice) < 2 {
+		println("args length invalid", _cmd_str)
+		cmd = exec.Command(_cmd_slice[0], _cmd_slice[1:]...)
+	} else {
+		cmd = exec.Command(_cmd_slice[0], _cmd_slice[1:]...)
+	}
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Println("cmd.Run() failed with %s\n", err)
+		return
+	}
+	outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
+	fmt.Printf("out:\n%s\nerr:\n%s\n", outStr, errStr)
 }
