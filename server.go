@@ -28,6 +28,18 @@ func echo(conn *net.TCPConn) {
 	}
 }
 
+func reply(conn *net.TCPConn) {
+	for {
+		tmp := make([]byte, 256)
+		m, _ := conn.Read(tmp)
+		if m > 0 {
+			resp_str := string(tmp[:m])
+			fmt.Println(resp_str)
+			tmp = make([]byte, 256)
+		}
+	}
+}
+
 var reader = bufio.NewReader(os.Stdin)
 
 func main() {
@@ -45,6 +57,7 @@ func main() {
 			log.Fatal(err) // 错误直接退出
 		}
 		fmt.Println("remote address:", conn.RemoteAddr())
-		echo(conn)
+		go echo(conn)
+		go reply(conn)
 	}
 }

