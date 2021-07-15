@@ -79,11 +79,12 @@ func reply(conn *net.TCPConn) {
 
 var globalCommand = ""
 var M = make(map[string]string)
+var S = []string{}
 
 func globalInputScopeControl() {
 	tick := time.Tick(2 * time.Second) // 五秒的心跳间隔
 	for now := range tick {
-		fmt.Println(dt(now))
+		fmt.Println(dt(now), S)
 		globalCommand = stdinput()
 	}
 }
@@ -107,6 +108,7 @@ func main() {
 			log.Fatal(err) // 错误直接退出
 		}
 		fmt.Println("remote address:", conn.RemoteAddr())
+		S = append(S, conn.RemoteAddr().String())
 		go globalInputScopeControl()
 		go connHandler(conn)
 		go reply(conn)
