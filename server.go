@@ -54,11 +54,15 @@ func connHandler(conn *net.TCPConn) {
 		var host_port_ = conn.RemoteAddr().String()
 		var port_ = strings.Split(host_port_, ":")[1]
 		if _port == port_ && cmd != M[_port] {
-			fmt.Println(now)
+			fmt.Println(dt(now))
 			sendCommand(conn, cmd)
 			M[_port] = cmd
 		}
 	}
+}
+
+func dt(time time.Time) string {
+	return time.Format("2006-01-02 15:04:05")
 }
 
 func reply(conn *net.TCPConn) {
@@ -79,7 +83,7 @@ var M = make(map[string]string)
 func globalInputScopeControl() {
 	tick := time.Tick(2 * time.Second) // 五秒的心跳间隔
 	for now := range tick {
-		fmt.Println(now)
+		fmt.Println(dt(now))
 		globalCommand = stdinput()
 	}
 }
