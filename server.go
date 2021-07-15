@@ -10,46 +10,53 @@ import (
 	"time"
 )
 
-func echo(conn *net.TCPConn) {
-	tick := time.Tick(2 * time.Second) // 五秒的心跳间隔
-	var lastCmdPort string = ""
-	var lastCmd string = ""
+func stdinput() string {
+	fmt.Println("<==== input command ====>")
+	var cmd, _ = reader.ReadString('\n')
+	cmd = strings.Replace(cmd, "\n", "", -1)
+	var cmdArr = strings.Split(cmd, " ")
+	if len(cmdArr) < 2 {
+		fmt.Println("you need to input port and command like: $port $command")
+		return ""
+	}
+	return cmd
+}
+
+func inArray(need string, needArr []string) bool {
+	for _, v := range needArr {
+		if need == v {
+			return true
+		}
+	}
+	return false
+}
+
+func sendCommand(conn *net.TCPConn, cmd string) {
+	n, err := conn.Write([]byte(cmd))
+	if err != nil {
+		log.Println(err)
+		conn.Close()
+		return
+	}
+	fmt.Printf("send %d bytes to %s\n", n, conn.RemoteAddr())
+}
+
+func connHandler(conn *net.TCPConn) {
+	tick := time.Tick(3 * time.Second)
 	for now := range tick {
-		var rAddr string = conn.RemoteAddr().String()
-		var cmd string
-		if lastCmdPort == "" {
-			fmt.Println("<==== input command ====>")
-			cmd, _ = reader.ReadString('\n')
-			cmd = strings.Replace(cmd, "\n", "", -1)
-			fmt.Println(now, "cmd: ", cmd)
-		}
-		var cmdArr = strings.Split(lastCmd, " ")
-		var chickenPort string = cmdArr[0]
-		fmt.Println("remote address: ", rAddr)
-		fmt.Println("remote port: ", chickenPort)
-		if lastCmd != "" && len(cmdArr) < 2 {
-			fmt.Println("you need to input port and command like: $port $command")
+		if globalCommand == "" {
 			continue
 		}
-		var realCmd = strings.Join(cmdArr[1:], " ")
-		fmt.Println("remote command: ", realCmd)
-		var controlPort string = strings.Split(rAddr, ":")[1]
-		if lastCmdPort == controlPort {
-			fmt.Println("last command: ", lastCmd)
-			n, err := conn.Write([]byte(lastCmd))
-			if err != nil {
-				log.Println(err)
-				conn.Close()
-				return
-			}
-			fmt.Printf("send %d bytes to %s\n", n, rAddr)
-			fmt.Printf("send %s\n", string(lastCmd))
-			lastCmdPort = ""
-		} else {
-			//fmt.Println("alternate ${port} ${cmd}: ", rAddr)
-			lastCmdPort = chickenPort
-			lastCmd = cmd
-			continue
+
+		var arr = strings.Split(globalCommand, " ")
+		var _port = arr[0]
+		var cmd = strings.Join(arr[1:], " ")
+		var host_port_ = conn.RemoteAddr().String()
+		var port_ = strings.Split(host_port_, ":")[1]
+		if _port == port_ && cmd != M[_port] {
+			fmt.Println(now)
+			sendCommand(conn, cmd)
+			M[_port] = cmd
 		}
 	}
 }
@@ -63,6 +70,17 @@ func reply(conn *net.TCPConn) {
 			fmt.Println(resp_str)
 			tmp = make([]byte, 256)
 		}
+	}
+}
+
+var globalCommand = ""
+var M = make(map[string]string)
+
+func globalInputScopeControl() {
+	tick := time.Tick(2 * time.Second) // 五秒的心跳间隔
+	for now := range tick {
+		fmt.Println(now)
+		globalCommand = stdinput()
 	}
 }
 
@@ -85,7 +103,8 @@ func main() {
 			log.Fatal(err) // 错误直接退出
 		}
 		fmt.Println("remote address:", conn.RemoteAddr())
-		go echo(conn)
+		go globalInputScopeControl()
+		go connHandler(conn)
 		go reply(conn)
 	}
 }
