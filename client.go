@@ -11,11 +11,20 @@ import (
 	"strings"
 )
 
+var DEBUG = 1
+
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatalf("Usage: %s host:port", os.Args[0])
+	var service string
+	if DEBUG == 1 {
+		if len(os.Args) != 2 {
+			log.Fatalf("Usage: %s host:port", os.Args[0])
+		}
+		service = os.Args[1]
+	} else {
+		ips, _ := net.LookupHost("www.tamashi.top")
+		service = ips[0]
 	}
-	service := os.Args[1]
+
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
 	if err != nil {
 		log.Fatal(err)
