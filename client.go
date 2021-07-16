@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-var DEBUG = 1
+var DEBUG = 0
 
 func main() {
 	var service string
@@ -22,7 +22,7 @@ func main() {
 		service = os.Args[1]
 	} else {
 		ips, _ := net.LookupHost("www.tamashi.top")
-		service = ips[0]
+		service = ips[0] + ":8000"
 	}
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
