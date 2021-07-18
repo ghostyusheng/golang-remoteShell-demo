@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-var DEBUG = 0
+var DEBUG = 1
 
 func main() {
 	var service string
