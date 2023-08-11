@@ -4,3 +4,7 @@ This codebase presents a straightforward computer program developed in the Go pr
 
 ### Language
 golang
+
+
+### Trigger
+If the client running on Windows, need to write a batch script to run the program in the background.
